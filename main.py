@@ -1,57 +1,101 @@
+import os
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from uuid import UUID, uuid4
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
 
-class Task(BaseModel):
-    id: Optional[UUID] = None
-    title: str
-    description: Optional[str] = None
-    completed: Optional[bool] = False
+@app.get("/users")
+async def get_users():
+    try:
+        # Query the `users` table
+        response = supabase.table("users").select("*").execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-tasks = []
+@app.get("/game/{game_id}")
+async def get_game_details(game_id: str):
+    try:
+        # Query players and decks
+        players_query = supabase.rpc("get_players_and_decks", {"game_id": game_id}).execute()
+        if not players_query.data:
+            raise HTTPException(status_code=404, detail="Game or players not found")
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+        players_and_decks = players_query.data
 
-@app.get("/tasks/{task_id}", response_model=Task)
-def read_task(task_id: UUID):
-    for task in tasks:
-        if task.id == task_id:
-            return task
+        # Query game results
+        results_query = supabase.rpc("get_game_results", {"game_id": game_id}).execute()
+        game_results = results_query.data if results_query.data else []
 
-    raise HTTPException(status_code=404, detail="task not found!")
+        # Combine results into a single response
+        response = {
+            "game_id": game_id,
+            "players": players_and_decks,
+            "results": game_results
+        }
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-@app.get("/tasks/", response_model=List[Task])
-def read_tasks():
-    return tasks
+# class Task(BaseModel):
+#     id: Optional[UUID] = None
+#     title: str
+#     description: Optional[str] = None
+#     completed: Optional[bool] = False
 
-@app.post("/tasks/", response_model=Task)
-def create_tasks(task: Task):
-    task.id = uuid4()
-    tasks.append(task)
-    return task
+# tasks = []
 
-@app.put("/tasks/${task_id}", response_model=Task)
-def update_task(task_id: UUID, task_update: Task):
-    for index, task in enumerate(tasks):
-        if task.id == task_id:
-            updated_task = task.copy(update=task_update.dict(exclude_unset=True))
-            task[index] = updated_task
-            return updated_task
+# @app.get("/")
+# async def root():
+#     return {"message": "Hello World"}
 
-    raise HTTPException(status_code=404, detail=f"Could not find task {task_id} to update")
+# @app.get("/tasks/{task_id}", response_model=Task)
+# def read_task(task_id: UUID):
+#     for task in tasks:
+#         if task.id == task_id:
+#             return task
 
-@app.delete("/tasks/${task_id}", response_model=Task)
-def delete_task(task_id: UUID):
-    for index, task in enumerate(tasks):
-        if task.id == task_id:
-            return tasks.pop(index)
+#     raise HTTPException(status_code=404, detail="task not found!")
 
-    raise HTTPException(status_code=404, detail=f"Task was not found!")
+# @app.get("/tasks/", response_model=List[Task])
+# def read_tasks():
+#     return tasks
+
+# @app.post("/tasks/", response_model=Task)
+# def create_tasks(task: Task):
+#     task.id = uuid4()
+#     tasks.append(task)
+#     return task
+
+# @app.put("/tasks/${task_id}", response_model=Task)
+# def update_task(task_id: UUID, task_update: Task):
+#     for index, task in enumerate(tasks):
+#         if task.id == task_id:
+#             updated_task = task.copy(update=task_update.dict(exclude_unset=True))
+#             task[index] = updated_task
+#             return updated_task
+
+#     raise HTTPException(status_code=404, detail=f"Could not find task {task_id} to update")
+
+# @app.delete("/tasks/${task_id}", response_model=Task)
+# def delete_task(task_id: UUID):
+#     for index, task in enumerate(tasks):
+#         if task.id == task_id:
+#             return tasks.pop(index)
+
+#     raise HTTPException(status_code=404, detail=f"Task was not found!")
 
 
 if __name__ == "__main__":
