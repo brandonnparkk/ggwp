@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from uuid import UUID, uuid4
 from supabase import create_client, Client
 from dotenv import load_dotenv
-
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
@@ -15,6 +15,15 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    # allow_origins=["https://splendorous-muffin-58a087.netlify.app"],  # Frontend URL
+    allow_origins=["*"],  # Frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/users")
 async def get_users():
