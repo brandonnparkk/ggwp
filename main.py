@@ -12,6 +12,10 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+class GameCreateRequest(BaseModel):
+    game_name: str
+    players: list[dict]  # List of player objects with 'name'
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 app = FastAPI()
@@ -57,6 +61,21 @@ async def get_game_details(game_id: str):
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@app.post("/game")
+async def create_game(game: GameCreateRequest):
+    try:
+        data = {
+            "game_name": game.game_name,
+            "players": game.players,
+        }
+
+        response = supabase.table("games").insert(data).execute()
+
+        return {"message": "Game created successfully", "data": response.data}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # class Task(BaseModel):
 #     id: Optional[UUID] = None
