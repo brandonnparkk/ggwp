@@ -11,6 +11,7 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+FE_URL = os.getenv("FE_URL")
 
 class GameCreateRequest(BaseModel):
     game_name: str
@@ -22,8 +23,11 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    # allow_origins=["https://splendorous-muffin-58a087.netlify.app"],  # Frontend URL
-    allow_origins=["*"],  # Frontend URL
+    allow_origins=[
+        "http://localhost:3000", # Localhost with port (Next.js default)
+        "http://127.0.0.1:3000",
+        FE_URL
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
