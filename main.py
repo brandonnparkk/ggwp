@@ -23,11 +23,12 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000", # Localhost with port (Next.js default)
-        "http://127.0.0.1:3000",
-        FE_URL
-    ],
+    # allow_origins=[
+    #     "http://localhost:3000", # Localhost with port (Next.js default)
+    #     "http://127.0.0.1:3000",
+    #     FE_URL
+    # ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -65,14 +66,6 @@ async def get_game_details(game_id: str):
         return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
-@app.get("/games")
-async def get_all_games():
-    try:
-        response = supabase.table("games").select("*").execute()
-        return response.data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/game")
 async def create_game(game: GameCreateRequest):
