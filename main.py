@@ -66,6 +66,14 @@ async def get_game_details(game_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
+@app.get("/games")
+async def get_all_games():
+    try:
+        response = supabase.table("games").select("*").execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/game")
 async def create_game(game: GameCreateRequest):
     try:
